@@ -9,7 +9,6 @@ from slackclient import SlackClient
 starterbot_id = None
 
 RTM_READ_DELAY = 1
-EXAMPLE_COMMAND = "123"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
 config.slack_client = SlackClient(config.slack_client)
@@ -62,8 +61,6 @@ def twitter_trend():
     temp_trends = trends['trends']
 
     for trnd in temp_trends:
-        sortedTweets.append(trnd)
-
     sortedTweets = sorted(sortedTweets, key=itemgetter('tweet_volume'),reverse=True)
 
     ctr = 1
