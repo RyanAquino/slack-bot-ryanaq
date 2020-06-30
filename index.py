@@ -1,6 +1,6 @@
 """
 Author: Ryan Aquino
-Description: Python program that gets the top 10 trending twitter post and post it to slack channel every 3 hours
+Description: Program that responds to users or post to Slack channel for the top 10 trending tweets in twitter.com for every 3 hours.
 """
 from config import ACCESS_SECRET, ACCESS_TOKEN, API_SECRET, API_KEY, HOOK_URL, OAUTH
 from twitter import Twitter
@@ -24,51 +24,9 @@ def format_tweet(tweets) -> str:
     return msg.rstrip('\n')
 
 
-def bubble_sort(data) -> None:
-    """
-    Sort the tweets based on tweet volume using bubble sort alg.
-
-    :param data: list of tweets
-    :return: None
-    """
-    n = len(data)
-
-    for i in range(n):
-        for j in range(n-1-i):
-            if not data[j+1]['tweet_volume']:
-                data[j+1]['tweet_volume'] = 0
-            if not data[j]['tweet_volume']:
-                data[j]['tweet_volume'] = 0
-
-            if data[j+1]['tweet_volume'] > data[j]['tweet_volume']:
-                data[j], data[j+1] = data[j+1], data[j]
-
-
-def filter_top10(tweets) -> list:
-    """
-    Filter top 50 trending tweets to top 10 based on tweet volume
-
-    :param tweets: list of tweets
-    :return: list of top 10 tweets
-    """
-
-    result = []
-
-    for i in range(10):
-        data = {
-            'name': tweets[i]['name'],
-            'url': tweets[i]['url'],
-            'tweet_volume': tweets[i]['tweet_volume']
-        }
-        result.append(data)
-
-    return result
-
-
 @RTMClient.run_on(event="message")
 def bot(**payload):
-    trends = get_top_10()
-    msg = format_tweet(trends)
+    msg = get_top10_msg()
     data = payload['data']
     web_client = payload['web_client']
 
@@ -84,27 +42,32 @@ def bot(**payload):
       )
 
 
-def get_top_10() -> list:
+def get_top10_msg() -> str:
     """
-    Retreive top 10 trending twitter posts
-    :return: list
+    Retrieve top 10 trending twitter post and format them into string.
+
+    :return: str
     """
     tweet = Twitter(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
-    trends = tweet.get_trends()
-    bubble_sort(trends)
-    trends = filter_top10(trends)
+    tweet.get_trends()
+    tweet.sort_tweets()
+    trends = tweet.filter_top_10()
+    msg = format_tweet(trends)
 
-    return trends
+    return msg
 
 
 def post_to_channel() -> None:
+    """
+    Post to slack channel top 10 trending tweets scheduled every 3 hours.
+    :return: None
+    """
     t = threading.Timer(10800.0, post_to_channel)
     t.daemon = True
     t.start()
 
     slack = Slack(HOOK_URL)
-    trends = get_top_10()
-    msg = format_tweet(trends)
+    msg = get_top10_msg()
     slack.post_to_channel(msg)
 
     print(f'Posted - {time.strftime("%T", time.localtime())}')

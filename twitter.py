@@ -26,6 +26,7 @@ class Twitter:
         api = API(auth)
 
         self.api = api
+        self.tweets = None
 
     def get_trends(self) -> list:
         """
@@ -36,4 +37,44 @@ class Twitter:
         list_tweets = self.api.trends_place(1)
         list_tweets = list(list_tweets[0]['trends'])
 
-        return list_tweets
+        self.tweets = list_tweets
+
+        return self.tweets
+
+    def sort_tweets(self) -> None:
+        """
+        Sort the tweets based on tweet volume using bubble sort alg.
+
+        :return: None
+        """
+        n = len(self.tweets)
+
+        for i in range(n):
+            for j in range(n - 1 - i):
+                if not self.tweets[j + 1]['tweet_volume']:
+                    self.tweets[j + 1]['tweet_volume'] = 0
+                if not self.tweets[j]['tweet_volume']:
+                    self.tweets[j]['tweet_volume'] = 0
+
+                if self.tweets[j + 1]['tweet_volume'] > self.tweets[j]['tweet_volume']:
+                    self.tweets[j], self.tweets[j + 1] = self.tweets[j + 1], self.tweets[j]
+
+    def filter_top_10(self) -> list:
+        """
+        Filter top 50 trending tweets to top 10 based on tweet volume
+
+        :param tweets: list of tweets
+        :return: list of top 10 tweets
+        """
+
+        result = []
+
+        for i in range(10):
+            data = {
+                'name': self.tweets[i]['name'],
+                'url': self.tweets[i]['url'],
+                'tweet_volume': self.tweets[i]['tweet_volume']
+            }
+            result.append(data)
+
+        return result

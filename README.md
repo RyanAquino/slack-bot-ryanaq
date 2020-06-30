@@ -1,6 +1,5 @@
-# Slackbot Twitter API
-
-Slackbot program that post top 10 trending tweets on twitter on a slack channel every 3 hours.
+# Twitter Slack Bot
+Program that responds to users or post to Slack channel for the top 10 trending tweets in twitter.com for every 3 hours.
 
 
 ## Technology
