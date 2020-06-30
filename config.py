@@ -6,3 +6,4 @@ ACCESS_SECRET = ''
 
 # Slack API incoming webhook url
 HOOK_URL = ''
+OAUTH = ''

@@ -2,12 +2,12 @@
 Author: Ryan Aquino
 Description: Python program that gets the top 10 trending twitter post and post it to slack channel every 3 hours
 """
-from config import ACCESS_SECRET, ACCESS_TOKEN, API_SECRET, API_KEY, HOOK_URL
+from config import ACCESS_SECRET, ACCESS_TOKEN, API_SECRET, API_KEY, HOOK_URL, OAUTH
 from twitter import Twitter
-from slack import Slack
-import schedule
+from slack_bot import Slack
+from slack import RTMClient
+import threading
 import time
-
 
 
 def format_tweet(tweets) -> str:
@@ -65,26 +65,52 @@ def filter_top10(tweets) -> list:
     return result
 
 
-def main():
-    try:
-        tweet = Twitter(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
-        slack = Slack(HOOK_URL)
-    except Exception:
-        print('Something went wrong')
+@RTMClient.run_on(event="message")
+def bot(**payload):
+    trends = get_top_10()
+    msg = format_tweet(trends)
+    data = payload['data']
+    web_client = payload['web_client']
 
+    if 'trend' in data['text'].lower():
+      channel_id = data['channel']
+      thread_ts = data['ts']
+      user = data['user']
+
+      web_client.chat_postMessage(
+        channel=channel_id,
+        text=f"Hi <@{user}>! \n Here is the top 10 trending twitter tweets: \n {msg}",
+        thread_ts=thread_ts
+      )
+
+
+def get_top_10() -> list:
+    """
+    Retreive top 10 trending twitter posts
+    :return: list
+    """
+    tweet = Twitter(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
     trends = tweet.get_trends()
     bubble_sort(trends)
     trends = filter_top10(trends)
 
+    return trends
+
+
+def post_to_channel() -> None:
+    t = threading.Timer(10800.0, post_to_channel)
+    t.daemon = True
+    t.start()
+
+    slack = Slack(HOOK_URL)
+    trends = get_top_10()
     msg = format_tweet(trends)
     slack.post_to_channel(msg)
 
     print(f'Posted - {time.strftime("%T", time.localtime())}')
 
 
-schedule.every(3).hour.do(main)
-
 if __name__ == '__main__':
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    post_to_channel()
+    rtm_client = RTMClient(token=OAUTH)
+    rtm_client.start()
